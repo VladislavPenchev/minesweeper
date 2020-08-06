@@ -5,5 +5,5 @@ import com.penchev.minesweeper_game.domain.entities.Board;
 public interface OutputWriter {
     void writeLine(String line);
 
-    void printBoard(Board board);
+    void printBoard(Board board, boolean gameOver);
 }

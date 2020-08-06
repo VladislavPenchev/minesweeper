@@ -1,21 +1,20 @@
 package com.penchev.minesweeper_game.service.impl;
 
+import com.penchev.minesweeper_game.constants.SignConstants;
 import com.penchev.minesweeper_game.domain.entities.Board;
 import com.penchev.minesweeper_game.domain.entities.Position;
 import com.penchev.minesweeper_game.service.BoardService;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class BoardServiceImpl implements BoardService {
-    private static final int ROWS_COLS_FOR_BEGINNER = 9;
+    private static final int ROWS_COLS_FOR_BEGINNER = 3;  //9
     private static final int ROWS_COLS_FOR_INTERMEDIATE = 16;
     private static final int ROWS_COLS_FOR_ADVANCED = 24;
 
-    private static final int BEGINNER_MINES_COUNT = 10;
+    private static final int BEGINNER_MINES_COUNT = 2; // 10
     private static final int INTERMEDIATE_MINES_COUNT = 40;
     private static final int ADVANCED_MINES_COUNT = 99;
 
@@ -25,15 +24,26 @@ public class BoardServiceImpl implements BoardService {
         switch (difficultyLevel) {
             case 0:
                 board = new Board(ROWS_COLS_FOR_BEGINNER);
-                fillBoardWithMines(board, BEGINNER_MINES_COUNT);
+                board.setCountOfMines(BEGINNER_MINES_COUNT);
+//                Position position1 = new Position(0, 2);
+                Position position2 = new Position(1, 2);
+                Position position3 = new Position(2, 2);
+                Set<Position> positions = new HashSet<>();
+//                positions.add(position1);
+                positions.add(position2);
+                positions.add(position3);
+                board.setMines(positions);
+//                fillBoardWithMines(board);
                 return generateInitBoard(board);
             case 1:
                 board = new Board(ROWS_COLS_FOR_INTERMEDIATE);
-                fillBoardWithMines(board, INTERMEDIATE_MINES_COUNT);
+                board.setCountOfMines(INTERMEDIATE_MINES_COUNT);
+                fillBoardWithMines(board);
                 return generateInitBoard(board);
             case 2:
                 board = new Board(ROWS_COLS_FOR_ADVANCED);
-                fillBoardWithMines(board, ADVANCED_MINES_COUNT);
+                board.setCountOfMines(ADVANCED_MINES_COUNT);
+                fillBoardWithMines(board);
                 return generateInitBoard(board);
             default:
                 return null;
@@ -41,42 +51,32 @@ public class BoardServiceImpl implements BoardService {
         }
     }
 
-    private Board generateInitBoard(Board board) {
-        for (int row = 0; row < board.getRowsSize(); row++) {
-            for (int col = 0; col < board.getColsSize(); col++) {
-                Position position = new Position(row, col);
-                board.add(position, "-");
-            }
-        }
-        return board;
-    }
-
-    private void fillBoardWithMines(Board board, int minesCount) {
-        Set<Position> mines = new HashSet<>();
+    @Override
+    public void editFirstPositionIfMine(Board board, List<Integer> constraints) {
+        board.getMines().remove(new Position(constraints.get(0), constraints.get(1)));
 
         Random random = new Random();
         random.setSeed(System.currentTimeMillis());
 
-        while(mines.size() != minesCount) {
+        while (board.getMines().size() != board.getCountOfMines()) {
             int row = Math.abs(random.nextInt(board.getRowsSize()) % 100);
             int col = Math.abs(random.nextInt(board.getRowsSize()) % 100);
             Position position = new Position(row, col);
-            mines.add(position);
+            board.getMines().add(position);
         }
-
-        board.setMines(mines);
     }
 
     /**
      * Foreach all neighbour cells and calculate sum of green cells. Ignore all
      * coordinates that are invalid.
      *
-     * @param board   non empty grid
+     * @param board  non empty grid
      * @param rowArg current coordinate of row
      * @param colArg current coordinate of col
      * @return {@code Integer} sum of green neighbours.
      */
-    private int calculateMines(Board board, int rowArg, int colArg) {
+    @Override
+    public int calculateMines(Board board, int rowArg, int colArg) {
         int sumOfGreen = 0;
         int initRow = rowArg - 1;
         int initCol = colArg - 1;
@@ -92,5 +92,52 @@ public class BoardServiceImpl implements BoardService {
             }
         }
         return sumOfGreen;
+    }
+
+    @Override
+    public List<Position> calculateEmptyFields(Board board, int rowArg, int colArg) {
+        List<Position> positionsOfEmptyFields = new ArrayList<>();
+        int initRow = rowArg - 1;
+        int initCol = colArg - 1;
+
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 3; col++) {
+                if (initRow + row < 0 || initCol + col < 0
+                        || initRow + row > board.getRowsSize() - 1 || initCol + col > board.getColsSize() - 1) {
+                    continue;
+                }
+                Position currPosition = new Position(initRow + row, initCol + col);
+                if (!board.getMines().contains(currPosition)) {
+                    positionsOfEmptyFields.add(currPosition);
+                }
+            }
+        }
+        return positionsOfEmptyFields;
+    }
+
+    private Board generateInitBoard(Board board) {
+        for (int row = 0; row < board.getRowsSize(); row++) {
+            for (int col = 0; col < board.getColsSize(); col++) {
+                Position position = new Position(row, col);
+                board.add(position, SignConstants.SIGN_INIT_FIELD);
+            }
+        }
+        return board;
+    }
+
+    private void fillBoardWithMines(Board board) {
+        Set<Position> mines = new HashSet<>();
+
+        Random random = new Random();
+        random.setSeed(System.currentTimeMillis());
+
+        while (mines.size() != board.getCountOfMines()) {
+            int row = Math.abs(random.nextInt(board.getRowsSize()) % 100);
+            int col = Math.abs(random.nextInt(board.getRowsSize()) % 100);
+            Position position = new Position(row, col);
+            mines.add(position);
+        }
+
+        board.setMines(mines);
     }
 }

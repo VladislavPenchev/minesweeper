@@ -8,6 +8,7 @@ import java.util.Set;
 public class Board {
     private String[][] board;
     private Set<Position> mines;
+    private int countOfMines;
 
     public Board(int rowsAndCols) {
         this.board = new String[rowsAndCols][rowsAndCols];
