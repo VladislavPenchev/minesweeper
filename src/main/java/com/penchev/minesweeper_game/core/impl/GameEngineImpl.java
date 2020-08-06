@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -50,7 +52,7 @@ public class GameEngineImpl implements Engine {
         int difficultyLevel = 0;
         try {
             difficultyLevel = Integer.parseInt(consoleReader.readLine());
-            if(difficultyLevel < 0) {
+            if (difficultyLevel < 0) {
                 consoleWriter.writeLine("Difficulty level can not be less than zero!");
                 return;
             }
@@ -60,19 +62,27 @@ public class GameEngineImpl implements Engine {
 
         board = boardService.createBoard(difficultyLevel);
         consoleWriter.printBoard(board, false);
+        Instant start = null;
 
         while (isStarted) {
             try {
                 consoleWriter.writeLine(GAME_ENTER_MOVE);
                 List<Integer> positions = SplitterUtil.rowsAndCols(consoleReader.readLine());
 
-                if(positions.get(0) < 0 || positions.get(1) < 0){
+                if (positions.get(0) < 0 || positions.get(1) < 0) {
                     consoleWriter.writeLine("Row or col can not be less than zero!");
-                    return;
+                    continue;
+                }else if(positions.get(0) + 1 > board.getRowsSize() || positions.get(1) + 1 > board.getColsSize()) {
+                    consoleWriter.writeLine("Row or col is out of range!");
+                    continue;
                 }
 
-                if(!board.getMines().contains(new Position(positions.get(0), positions.get(1)))
-                && !board.getBoard()[positions.get(0)][positions.get(1)].equals(SignConstants.SIGN_INIT_FIELD)) {
+                if(checkIsFirstPosition(board)) {
+                    start = Instant.now();
+                }
+
+                if (!board.getMines().contains(new Position(positions.get(0), positions.get(1)))
+                        && !board.getBoard()[positions.get(0)][positions.get(1)].equals(SignConstants.SIGN_INIT_FIELD)) {
                     consoleWriter.writeLine("You can not choose this position, because it is not empty! Try again...");
                     consoleWriter.printBoard(board, false);
                     continue;
@@ -87,14 +97,20 @@ public class GameEngineImpl implements Engine {
                     collectionOfPositions.add(new Position(positions.get(0), positions.get(1)));
                     generateNextBoard(board, collectionOfPositions);
                     consoleWriter.printBoard(board, false);
-                    if(checkIsOnlyMines(board)) {
+                    if (checkIsOnlyMines(board)) {
+                        Instant finish = Instant.now();
+
                         consoleWriter.writeLine("You win!");
+                        consoleWriter.writeLine(String.format("Time: %d", Duration.between(start, finish).toSeconds()));
                         isStarted = false;
                     }
 
                 } else {
+                    Instant finish = Instant.now();
+
                     consoleWriter.printBoard(board, true);
                     consoleWriter.writeLine("You lose!");
+                    consoleWriter.writeLine(String.format("Time: %d", Duration.between(start, finish).toSeconds()));
                     isStarted = false;
                 }
             } catch (IOException e) {
@@ -106,7 +122,7 @@ public class GameEngineImpl implements Engine {
     /**
      * Check if current position is mine
      *
-     * @param board  non empty board
+     * @param board     non empty board
      * @param positions Collection of integers: row and col
      * @return {@code boolean} true if position is mine.
      */
@@ -118,7 +134,7 @@ public class GameEngineImpl implements Engine {
      * Foreach all positions and check if player choose for the first time
      * position that is mine.
      *
-     * @param board  non empty board
+     * @param board non empty board
      * @return {@code boolean} true if position is mine.
      */
     private boolean checkFirstPositionIsMine(Board board) {
@@ -133,10 +149,21 @@ public class GameEngineImpl implements Engine {
         return true;
     }
 
+    private boolean checkIsFirstPosition(Board board) {
+        for (int row = 0; row < board.getRowsSize(); row++) {
+            for (int col = 0; col < board.getColsSize(); col++) {
+                if (!board.getBoard()[row][col].equals(SignConstants.SIGN_INIT_FIELD)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     /**
      * Foreach all positions and check if player can choose only mine.
      *
-     * @param board  non empty board
+     * @param board non empty board
      * @return {@code boolean} true if empty positions are only mines.
      */
     private boolean checkIsOnlyMines(Board board) {
@@ -156,11 +183,11 @@ public class GameEngineImpl implements Engine {
      * second calculate count of empty positions about current position
      * after that remove if there are positions that are checked because
      * this method will you only with recursion
-     *
+     * <p>
      * if count of mines is greater than zero it will update board with
      * number of mine about current position, else the position is empty
      *
-     * @param board  non empty board
+     * @param board     non empty board
      * @param positions Collection of integers: row and col
      */
     private void generateNextBoard(Board board, List<Position> positions) {
