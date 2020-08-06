@@ -10,11 +10,11 @@ import java.util.*;
 
 @Service
 public class BoardServiceImpl implements BoardService {
-    private static final int ROWS_COLS_FOR_BEGINNER = 3;  //9
+    private static final int ROWS_COLS_FOR_BEGINNER = 9;
     private static final int ROWS_COLS_FOR_INTERMEDIATE = 16;
     private static final int ROWS_COLS_FOR_ADVANCED = 24;
 
-    private static final int BEGINNER_MINES_COUNT = 2; // 10
+    private static final int BEGINNER_MINES_COUNT = 10;
     private static final int INTERMEDIATE_MINES_COUNT = 40;
     private static final int ADVANCED_MINES_COUNT = 99;
 
@@ -25,15 +25,7 @@ public class BoardServiceImpl implements BoardService {
             case 0:
                 board = new Board(ROWS_COLS_FOR_BEGINNER);
                 board.setCountOfMines(BEGINNER_MINES_COUNT);
-//                Position position1 = new Position(0, 2);
-                Position position2 = new Position(1, 2);
-                Position position3 = new Position(2, 2);
-                Set<Position> positions = new HashSet<>();
-//                positions.add(position1);
-                positions.add(position2);
-                positions.add(position3);
-                board.setMines(positions);
-//                fillBoardWithMines(board);
+                fillBoardWithMines(board);
                 return generateInitBoard(board);
             case 1:
                 board = new Board(ROWS_COLS_FOR_INTERMEDIATE);
@@ -67,31 +59,31 @@ public class BoardServiceImpl implements BoardService {
     }
 
     /**
-     * Foreach all neighbour cells and calculate sum of green cells. Ignore all
+     * Foreach all neighbour positions and calculate sum of mines. Ignore all
      * coordinates that are invalid.
      *
-     * @param board  non empty grid
+     * @param board  non empty board
      * @param rowArg current coordinate of row
      * @param colArg current coordinate of col
-     * @return {@code Integer} sum of green neighbours.
+     * @return {@code Integer} sum of mines.
      */
     @Override
     public int calculateMines(Board board, int rowArg, int colArg) {
-        int sumOfGreen = 0;
+        int sumOfMines = 0;
         int initRow = rowArg - 1;
         int initCol = colArg - 1;
 
-        sumOfGreen -= board.getMines().contains(new Position(initRow, initCol)) ? 1 : 0;
+        sumOfMines -= board.getMines().contains(new Position(initRow, initCol)) ? 1 : 0;
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
                 if (initRow + row < 0 || initCol + col < 0
                         || initRow + row > board.getRowsSize() - 1 || initCol + col > board.getColsSize() - 1) {
                     continue;
                 }
-                sumOfGreen += board.getMines().contains(new Position(initRow + row, initCol + col)) ? 1 : 0;
+                sumOfMines += board.getMines().contains(new Position(initRow + row, initCol + col)) ? 1 : 0;
             }
         }
-        return sumOfGreen;
+        return sumOfMines;
     }
 
     @Override
@@ -115,6 +107,12 @@ public class BoardServiceImpl implements BoardService {
         return positionsOfEmptyFields;
     }
 
+    /**
+     * Foreach all positions and fill each of position with init sign '-'
+     *
+     * @param board empty board
+     * @return {@code Integer} sum of mines.
+     */
     private Board generateInitBoard(Board board) {
         for (int row = 0; row < board.getRowsSize(); row++) {
             for (int col = 0; col < board.getColsSize(); col++) {
@@ -125,6 +123,12 @@ public class BoardServiceImpl implements BoardService {
         return board;
     }
 
+    /**
+     * Foreach all positions and with help of class Random fill
+     * random positions on the board
+     *
+     * @param board  non empty board
+     */
     private void fillBoardWithMines(Board board) {
         Set<Position> mines = new HashSet<>();
 
